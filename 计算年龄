@@ -1,0 +1,44 @@
+import pandas as pd
+import vaex
+import os
+import matplotlib.pyplot as plt
+path = r"D:\datasets\mimiciii"
+os.chdir(path)
+
+"""
+show basic infomation of a sheet
+data:file name with ""
+example:"file1.csv"
+"""
+def Explore(data):
+    df = pd.read_csv(data)
+    print(df.shape)
+    df.info()
+    print(df.head())
+
+def Explore_hdf(data):
+    df = vaex.open(data)
+    df.info() 
+
+"""
+根据PATIENTS和ADMISSIONS表格计算年龄
+大于89岁患者出生日期为入园日期前300年
+"""
+
+ADMISSIONS = pd.read_csv("ADMISSIONS.csv",parse_dates=[3,4,5,14,15])
+
+PATIENTS = pd.read_csv("PATIENTS.csv",parse_dates=[3,4,5])
+
+df = pd.merge(ADMISSIONS,PATIENTS,on="SUBJECT_ID",how = "left")
+
+df.drop(["ROW_ID_x","ROW_ID_y"],axis=1,inplace=True)     ##  删除列，输入列明列表
+
+df["YOB"] = df["DOB"].apply(lambda x:x.year)
+
+df["YOA"] = df.ADMITTIME.apply(lambda x:x.year)
+
+df["AGE"] = df.YOA - df.YOB
+
+df.loc[df.AGE>=300,"AGE"] = 389 - df.loc[df.AGE>=300,"AGE"] 
+
+df.to_csv("病人情况.csv",index=0)   ## 不能取与原数据表相同的名称，无论大小写都不行，会覆盖原表格
