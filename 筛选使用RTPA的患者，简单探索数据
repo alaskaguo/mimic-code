@@ -1,0 +1,33 @@
+PRESCRIPTIONS = pd.read_csv("PRESCRIPTIONS.csv",parse_dates=[4,5])
+
+rtpa = PRESCRIPTIONS[PRESCRIPTIONS["DRUG"].str.contains("Alteplase")]
+
+rtpa.to_excel("rtpa.xlsx")
+
+rtpa["DRUG"].value_counts()
+
+rtpa.shape
+
+rtpa["SUBJECT_ID"].drop_duplicates().shape
+
+rtpa["dose"]=rtpa["DOSE_VAL_RX"].apply(lambda x: x.replace("-","")).astype("float64")
+
+rtpa["dose"].value_counts()
+
+rtpa = rtpa[rtpa["dose"].astype(int) >=8]
+
+rtpa.shape
+
+rtpa.head()
+
+rtpa.SUBJECT_ID.drop_duplicates().shape
+
+rtpa.HADM_ID.drop_duplicates().shape
+
+rtpa.ICUSTAY_ID.drop_duplicates().shape
+
+HADM_ID = rtpa.HADM_ID
+
+rtpa.sort_values(by=["HADM_ID"])
+
+rtpa.ROUTE.value_counts()
