@@ -30,4 +30,15 @@ HADM_ID = rtpa.HADM_ID
 
 rtpa.sort_values(by=["HADM_ID"])
 
+
 rtpa.ROUTE.value_counts()
+## 使用丙泊酚的患者
+PRESCRIPTIONS = pd.read_csv("PRESCRIPTIONS.csv",parse_dates=[4,5])
+
+propofol = PRESCRIPTIONS[PRESCRIPTIONS["DRUG"].str.contains("[Pp]ropofol")]
+
+propofol.dropna(subset=["DOSE_VAL_RX"],inplace=True)
+
+propofol.drop(propofol[propofol.DOSE_VAL_RX.str.contains("-")].index,inplace=True)
+
+propofol.DOSE_VAL_RX = propofol.DOSE_VAL_RX.astype(float)
