@@ -1,0 +1,50 @@
+def GetIdAndTranslate(ids,lab_chi,column_name):
+    """
+    ids:列表,准备翻译的项目ID列表,需要事先反复查找获得
+    lab_chi:字符串,项目的中文名称
+    column_name:字符串，项目英文通用名，用于最终表的表头
+    """
+    
+    global d_items
+    global chartevent
+    
+    tb_chart = chartevent[chartevent["ITEMID"].isin(ids)]
+    tb_chart
+
+    tb_count = tb_chart.groupby("ITEMID",agg="count")
+
+    tb_count
+
+    d_items.loc[d_items["ITEMID"].isin(tb_ids),"label_chi"] = lab_chi
+
+    tb_ids_2 = tb_count[tb_count["count"] > 200]["ITEMID"]
+
+    tb = {column_name:list(tb_ids_2.values)}
+    
+    return tb
+    
+    
+def ShowFiveRowsChart(dataframe):
+    global chartevent
+    df = pd.DataFrame()
+    for id in dataframe["ITEMID"]:
+        df1 = chartevent[chartevent["ITEMID"] == id]
+        n = df1.shape[0]
+        if n>=5:
+            df = df.append(df1[0:5].to_pandas_df())
+        else:
+            df = df.append(df1.to_pandas_df())
+    return df    
+    
+    
+    category1 = "Treatments|Support|Skin|Adm|OT|Pulmonary|Impella|Pain|Insertion|General|APACHE|Respiratory|Bronchoscopy|Cardiovascular|Management|Invasive|Intubation|Vital|IABP|GYN|Alarms"
+    category2 = "|Hemodynamics|Access Lines|Dialysis|centesis|GI/GU|Puncture|Neurological"
+    
+    
+    patten = "Hemoglobin|hgb"
+
+    hb_exam_blood_items =  d_item_chart[(d_item_chart["LABEL"].str.contains(patten,flags=re.IGNORECASE,regex=True))&
+        (d_item_chart["LABEL"].str.contains("apache",flags=re.IGNORECASE,regex=True) == False)&
+        (d_item_chart["LABEL"].str.contains("%",flags=re.IGNORECASE,regex=True) == False) &
+        (d_item_chart["CATEGORY"].str.contains(category1+category2,flags=re.IGNORECASE,regex=True) == False)] 
+    hb_exam_blood_items
