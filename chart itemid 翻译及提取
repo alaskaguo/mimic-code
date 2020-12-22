@@ -25,6 +25,10 @@ def GetIdAndTranslate(ids,lab_chi,column_name):
     
     
 def ShowFiveRowsChart(dataframe):
+    """
+    显示查找出的chartitems的前五行
+    dataframe:pandas DataFrame,即GetExamRow得出的结果
+    """
     global chartevent
     df = pd.DataFrame()
     for id in dataframe["ITEMID"]:
@@ -35,6 +39,19 @@ def ShowFiveRowsChart(dataframe):
         else:
             df = df.append(df1.to_pandas_df())
     return df    
+    
+def GetExamRows(pattern):
+    """
+    查找包含pattern字符的行
+    pattern:字符串，可以是正则表达式，大小写都行
+    """
+    global d_item_chart
+    #category1 = "Treatments|Support|Skin|Adm|OT|Pulmonary|Impella|Pain|Insertion|General|APACHE|Respiratory|Bronchoscopy|Cardiovascular|Management|Invasive|Intubation|Vital|IABP|GYN|Alarms"
+    #category2 = "|Hemodynamics|Access Lines|Dialysis|centesis|GI/GU|Puncture|Neurological"
+    itemrows = d_item_chart[d_item_chart["LABEL"].str.contains(pattern,flags=re.IGNORECASE,regex=True)] 
+    #&(d_item_chart["CATEGORY"].str.contains(category1+category2,flags=re.IGNORECASE,regex=True) == False)] 
+    return itemrows    
+    
     
     
     category1 = "Treatments|Support|Skin|Adm|OT|Pulmonary|Impella|Pain|Insertion|General|APACHE|Respiratory|Bronchoscopy|Cardiovascular|Management|Invasive|Intubation|Vital|IABP|GYN|Alarms"
