@@ -1,0 +1,22 @@
+import pandas as pd
+import vaex
+import os
+import matplotlib.pyplot as plt
+import datetime
+from plotnine import *
+path = r"D:\datasets\mimiciii"
+os.chdir(path)
+
+##读入DIAGNOSES_ICD.csv,诊断总表
+dias = pd.read_csv("DIAGNOSES_ICD.csv")
+dias.dropna(subset=["ICD9_CODE"],inplace=True)
+
+dias_poisiong = pd.read_csv("ICD9诊断翻译_中毒部分.csv")
+
+data_poison = dias[dias.ICD9_CODE.isin(dias_poisiong.ICD9_CODE)]
+
+data_poison_count = data_poison.groupby('HADM_ID')["ICD9_CODE"].agg("count")
+
+poison_HADM_ID = pd.DataFrame(data_poison.HADM_ID.drop_duplicates())
+
+poison_HADM_ID.to_csv("中毒患者病历号.csv",index=0,encoding="utf-8-sig")
