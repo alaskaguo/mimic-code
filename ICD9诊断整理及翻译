@@ -1,0 +1,86 @@
+import pandas as pd
+import vaex
+import os
+import datetime
+import http.client
+import hashlib
+import urllib
+import random
+import json
+import re
+
+path = r"F:\myresearch\MIMICIIIsupport"
+os.chdir(path)
+
+## 主要功能
+def trans_col(word):
+    """
+    翻译单词，中到英
+    word:字符串，英文单词
+    
+    """
+    appid = '20201215000647541'  # 填写你的appid
+    secretKey = 'OYApVQxvZEWe6GDh1nbf'  # 填写你的密钥
+    httpClient = None
+    myurl = '/api/trans/vip/translate'
+    fromLang = 'en'   #原文语种
+    toLang = 'zh'   #译文语种
+    salt = random.randint(32768, 65536)
+    sign = appid + word + str(salt) + secretKey
+    sign = hashlib.md5(sign.encode()).hexdigest()
+    myurl = myurl + '?appid=' + appid + '&q=' + urllib.parse.quote(word) + '&from=' + fromLang + '&to=' + toLang + '&salt=' + str(salt) + '&sign=' + sign
+    try:
+        httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
+        httpClient.request('GET', myurl)
+
+        # response是HTTPResponse对象
+        response = httpClient.getresponse()
+        result_all = response.read().decode("utf-8")
+        result = json.loads(result_all)
+
+        #print (result)
+
+    except Exception as e:
+        print (e)
+    finally:
+        if httpClient:
+            httpClient.close()
+    return result['trans_result'][0]['dst']     
+
+### 更改DataFrame名和列名
+
+
+
+#### 挑选中毒诊断部分
+
+dias_poison = pd.read_excel("icd_dias_poisoning.xlsx")
+
+#### 提取ICD9编码成成一列
+
+dias_poison["ICD9_CODE"] = dias_poison.text.apply(lambda x:re.findall(r"^.*?\s",x)[0])
+
+#### 删除原有列中的编码部分
+
+dias_poison["text"] = dias_poison.apply(lambda x:x[0].replace(x[1],""),axis=1)
+
+#### 把“-”替换为空格
+
+dias_poison["text_1"] = dias_poison.text.apply(lambda x:x.replace("-"," "))
+
+#### 去除文字列中的前后空格
+
+dias_poison["text_1"] = dias_poison.text_1.apply(lambda x:x.strip())
+
+dias_poison.columns = ["text_1","ICD9_CODE","text"]
+
+dias_poison = dias_poison[dias_poison.columns[1:]]
+
+dias_poison["text_chi"] = dias_poison["text"].apply(lambda x:trans_col(x))
+
+dias_poison["ICD9_CODE"] = dias_poison.ICD9_CODE.apply(lambda x:x.replace(".",""))
+
+dias_poison["ICD9_CODE"] = dias_poison.ICD9_CODE.apply(lambda x:x.strip())
+
+#### 尽量用CSV格式，xlsx经常有意外错误
+
+dias_poison.to_csv("ICD9诊断翻译_中毒部分.csv",index=0,encoding="utf-8-sig")
