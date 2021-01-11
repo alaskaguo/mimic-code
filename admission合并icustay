@@ -1,0 +1,35 @@
+import pandas as pd
+import vaex
+import os
+import datetime
+import re
+
+path = r"D:\myrearch\mimicdata"
+os.chdir(path)
+
+admission = pd.read_csv("ADMISSIONS.csv")
+icustay = pd.read_csv("ICUSTAYS.csv")
+
+icustay.shape
+
+admission.shape
+
+icustay_first = icustay.groupby("HADM_ID").first()
+
+icustay_first["HADM_ID"] = icustay_first.index
+
+icustay_first.ICUSTAY_ID.drop_duplicates().shape
+
+icustay_first.HADM_ID.drop_duplicates().shape
+
+admission_1 = pd.merge(admission,icustay_first,on="HADM_ID",how="right")
+
+admission_1.shape
+
+admission_1.HADM_ID.drop_duplicates().shape
+
+admission_1.SUBJECT_ID_x.drop_duplicates().shape
+
+admission_1.SUBJECT_ID_y.drop_duplicates().shape
+
+admission_1.to_csv("admission_with_icu_icustay.csv",index=0)
