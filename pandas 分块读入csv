@@ -1,0 +1,28 @@
+df1 = pd.read_csv("INPUTEVENTS_CV.csv.gz",
+                       #nrows=10,
+                       iterator=True,
+                       #usecols=[ 'SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID','AMOUNT', 'AMOUNTUOM', 'RATE', 'RATEUOM', 'STORETIME',],
+                       parse_dates=["STORETIME",'CHARTTIME']
+                      )
+
+def read_big_csv(df_iterator):
+    """
+    df_iterator:pandas DataFrame 可迭代对象
+    """
+    loop = True
+    chunkSize = 100000
+    chunks = []
+    while loop:
+        try:
+            chunk = df_iterator.get_chunk(chunkSize)
+            chunks.append(chunk)
+        except StopIteration:
+            loop = False
+            print("Iteration is stopped.")
+    output_file = pd.concat(chunks, ignore_index=True)
+    
+    return output_file 
+
+## 使用
+
+labevents = read_big_csv(df)
