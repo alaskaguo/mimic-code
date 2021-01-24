@@ -1,0 +1,89 @@
+import pandas as pd
+import vaex
+import os
+import matplotlib.pyplot as plt
+import datetime
+from plotnine import *
+import re
+import numpy as np
+path = r"D:\datasets\mimiciii"
+os.chdir(path)
+
+d_lab = pd.read_csv("D_LABITEMS.csv.gz")
+d_items = pd.read_csv("D_ITEMS.csv.gz")
+labevents = vaex.open("LABEVENTS.csv.hdf5")
+chartevents = vaex.open("CHARTEVENTS.csv.hdf5")
+labevents = labevents[labevents.HADM_ID.notna()]
+
+## 乳酸id
+lactate_id = [50813]
+## 提取全部乳酸结果
+lactate_table = labevents[labevents.ITEMID.isin(lactate_id)]["SUBJECT_ID","HADM_ID","CHARTTIME","VALUENUM"]
+## 计数单人乳酸化验次数
+lac_stat = lactate_table.groupby(lactate_table.HADM_ID,agg = {"lac":[vaex.agg.count("VALUENUM")]})
+## 筛选化验次数大于1次的病人
+lactate_table_1 = lactate_table[lactate_table.HADM_ID.isin(lac_stat[lac_stat.lac_count>1].HADM_ID.values)]
+
+## lactate load计算函数
+def lac_load(data):
+    """
+    计算乳酸负荷
+    data:pandas DataFrame,值为数字,时间为datetime
+    value:str,乳酸值列名,
+    time:str,检测时间点列名
+    """
+    dataframe = data.sort_values(by=["charttime"]).reset_index()
+    lac_sum=0
+    i=0
+    while i< (len(data)-1):
+    #for i in np.arange(len(data)-1):
+        
+        v_sum = dataframe["VALUENUM"].iloc[i]+dataframe["VALUENUM"].iloc[i+1]
+        t_delta = (dataframe.charttime.iloc[i+1]-dataframe.charttime.iloc[i]).total_seconds()/3600
+        lactate_load = v_sum*t_delta*0.5
+        lac_sum+=lactate_load
+        i+=1
+    return lac_sum        
+
+## lactate load计算函数
+def normal_lac_load(data):
+    """
+    计算乳酸负荷
+    data:pandas DataFrame,值为数字,时间为datetime
+    value:str,乳酸值列名,
+    time:str,检测时间点列名
+    """
+    dataframe = data.sort_values(by=["charttime"]).reset_index()
+    lac_sum=0
+    i=0
+    while i< (len(data)-1):
+    #for i in np.arange(len(data)-1):
+        #print(i)
+        v_sum = dataframe["VALUENUM"].iloc[i]+dataframe["VALUENUM"].iloc[i+1]
+        t_delta = (dataframe.charttime.iloc[i+1]-dataframe.charttime.iloc[i]).total_seconds()/3600
+        lactate_load = v_sum*t_delta*0.5
+        lac_sum+=lactate_load
+        i+=1
+    normal_lac_load = lac_sum/((dataframe.charttime.iloc[len(dataframe)-1]-dataframe.charttime.iloc[0]).total_seconds()/3600)
+    return lac_sum,normal_lac_load       
+## vaex dataframe 转为  pandas dataframe
+lactate_table_2 = lactate_table_1.to_pandas_df()
+## CHARTTIME 转为 datetime
+lactate_table_2.loc[:,"charttime"] = pd.to_datetime(lactate_table_2.CHARTTIME)
+## 去掉空值
+lactate_table_3 = lactate_table_2[lactate_table_2.VALUENUM.notna()]
+## 分组聚合计算
+lac_loads = lactate_table_3.groupby("HADM_ID").apply(lac_load)
+## 转为DataFrame
+lac_loads = pd.DataFrame(lac_loads)
+##  分组聚合计算，乳酸负荷及正态乳酸负荷
+n_lac_loads = pd.DataFrame(lactate_table_3.groupby("HADM_ID").apply(normal_lac_load))
+## 整理表格
+n_lac_loads.columns =["result"]
+n_lac_loads = n_lac_loads.reset_index()
+n_lac_loads.loc[:,"load"] = n_lac_loads.result.apply(lambda x:round(x[0],2))
+n_lac_loads.loc[:,"normal_load"] = n_lac_loads.result.apply(lambda x:round(x[1],2))
+n_lac_loads.drop(["result"],axis=1,inplace=True)
+n_lac_loads.columns = ["hadm_id","lac_load","nor_lac_load"]
+## 写入
+n_lac_loads.to_csv(r"F:\myresearch\MIMICIIIsupport\tables\otherlabitems\normal_lactate_loads.csv")
