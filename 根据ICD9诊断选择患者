@@ -20,3 +20,48 @@ data_poison_count = data_poison.groupby('HADM_ID')["ICD9_CODE"].agg("count")
 poison_HADM_ID = pd.DataFrame(data_poison.HADM_ID.drop_duplicates())
 
 poison_HADM_ID.to_csv("中毒患者病历号.csv",index=0,encoding="utf-8-sig")
+
+def exact_patients(diagnoses_icd_list,disease_name):   
+    """
+    根据ICD9诊断代码提取病例,保存到F:\myresearch\MIMICIIIsupport\patient_exact\目录
+    diagnoses_icd_list:list,诊断代码列表
+    disease_name:str,疾病名称
+    """
+    global dias,d_dias
+    cases = dias[dias.ICD9_CODE.isin(diagnoses_icd_list)][["SUBJECT_ID","HADM_ID","SEQ_NUM","ICD9_CODE"]]
+    print("total case number:"+str(cases.shape[0]))
+    print(cases.SEQ_NUM.value_counts())
+    cases.to_csv(r"F:\myresearch\MIMICIIIsupport\patient_exact"+"\\"+disease_name+".csv")
+    return cases
+    
+ap_id = ["5770"]
+
+ap = exact_patients(ap_id,"AP")
+
+PE_id = ["41511","41513","41519","4162"]
+
+pe = exact_patients(PE_id,"PE")
+
+pe.ICD9_CODE.value_counts()
+
+dka_codes = [24910,24911,25010,25011,25012,25013]
+dka_codes = [str(i) for i in dka_codes]
+
+dka_patients = exact_patients(dka_codes,"DKA")
+
+##  主动脉夹层
+ad_ids = [str(i) for i in list(range(44100,44104))]
+
+ad_patients = exact_patients(ad_ids,"AD")
+
+## heat stroke    
+ht_ids = [str(i) for i in list(range(9920,9930))]
+
+ht_patients=exact_patients(ht_ids,"HeatStroke")
+
+## 只有5例
+
+poisoning_dias = d_dias[(d_dias.ICD9_CODE.apply(lambda x:x[:2]).isin(["96","97","98"]))|
+                      (d_dias.ICD9_CODE.apply(lambda x:x[:3]).isin(["E85","E86"]))]
+
+poisoning_patients = exact_patients(poisoning_dias.ICD9_CODE,"poisoning")    
