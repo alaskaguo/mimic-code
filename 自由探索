@@ -1,0 +1,59 @@
+import pandas as pd
+import vaex
+import os
+import datetime
+from plotnine import *
+import numpy as np
+import re
+
+path = r"F:\myresearch\MIMICIIIsupport\tablemimiciii"
+os.chdir(path)
+
+def explore_death(data):
+    """
+    死亡情况探索
+    data:pandas dataframe,从admissions 提取的病人子集
+    """
+    survival_count = data[data.columns[data.columns.str.contains("survive")][1:]].apply(lambda x:x.value_counts())
+    return survival_count
+
+def diagonses_sum(data):
+    """
+    诊断统计汇总
+    data:pandas dataframe,从admissions 提取的病人子集
+    """
+    global dias
+    patients_dias = pd.merge(data["hadm_id"],dias[["hadm_id","seq_num","icd9_code"]],on="hadm_id",how="left")
+        
+    top30_sum = patients_dias.icd9_code.value_counts()[:30]
+        
+    diagnoses_sum = pd.merge(d_dias[d_dias.icd9_code.isin(top30_sum.index)],
+                                    pd.DataFrame(top30_sum).reset_index().rename(columns={"index":"icd9_code","icd9_code":"sum"}),
+                                    on="icd9_code").sort_values(by=["sum"],ascending=False)
+        
+    patients_first_dias = patients_dias[patients_dias.seq_num == 1]
+        
+    top30_first_dias_patients_sum = patients_first_dias.icd9_code.value_counts()[:30]
+
+    first_diagnosis_sum = pd.merge(d_dias[d_dias.icd9_code.isin(top30_first_dias_patients_sum.index)],
+                 pd.DataFrame(top30_first_dias_patients_sum).reset_index().rename(columns={"index":"icd9_code","icd9_code":"sum"}),
+                 on="icd9_code").sort_values(by=["sum"],ascending=False)
+    return diagnoses_sum,first_diagnosis_sum   
+
+
+def explore_aki(data):
+    """
+    肾衰情况探索
+    data:pandas dataframe,从admissions 提取的病人子集
+    """
+    aki_count = data[data.columns[data.columns.str.contains("aki")]].apply(lambda x:x.value_counts())
+    return aki_count
+
+admissions = pd.read_csv(r"icustay_final.csv",index_col=0)
+d_dias = pd.read_csv(r"D_ICD_DIAGNOSES.csv.gz")
+dias = pd.read_csv(r"DIAGNOSES_ICD.csv.gz")
+d_dias.columns = [i.lower() for i in d_dias.columns]
+dias.columns = [i.lower() for i in dias.columns]
+icustays = pd.read_csv(r"ICUSTAYS.csv.gz")
+prescriptions = pd.read_csv(r"PRESCRIPTIONS.csv.gz")
+prescriptions.columns=[i.lower() for i in prescriptions.columns]
