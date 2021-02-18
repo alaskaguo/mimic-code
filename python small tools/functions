@@ -1,0 +1,125 @@
+def CHA2DS2VASc(dataframe,items_list):
+    """
+    计算CHA2DS2VASc评分
+    dataframe:pd DataFrame
+    items_list:list,评分变量列名列表,有顺序.[EF,hypertension,age,DM,stroke,vascular,gender]
+    """
+    
+    C = 1 if dataframe[items_list[0]] <=40 else 0
+    H = 1 if dataframe[items_list[1]] == 1 else 0
+    #A = 1 if dataframe[items_list[2]] >=75 else 0
+    
+    if dataframe[items_list[2]] >=75:
+        A = 2
+    elif dataframe[items_list[2]]>65 and dataframe[items_list[2]]<75:
+        A = 1
+    else:
+        A = 0
+   
+    D = 1 if dataframe[items_list[3]] == 1 else 0
+    S = 2 if dataframe[items_list[4]] == 1 else 0
+    V = 1 if dataframe[items_list[5]] == 1 else 0
+    Sc = 1 if dataframe[items_list[6]] == 1 else 0
+    cha = C + H + A + D + S + V + Sc
+    return cha
+    
+    
+def change_to_obj(dataframe,cutoff):
+    '''
+    把整个dataframe转为数字，再把单一值小于指定个数的列转为object
+    dataframe:pd dataframe
+    cutoff:int,指定的个数
+    '''
+    dataframe = dataframe.astype("float64")
+    unique_count = dataframe.apply(lambda x:len(x.unique()))
+
+    dataframe[list(unique_count[unique_count.values<cutoff].index)] = dataframe[list(unique_count[unique_count.values<cutoff].index)].astype("object")
+    return dataframe
+
+def del_percent_na(dataframe,percent):
+    '''
+    删除缺失值达到一定比例的列
+    dataframe:pandas dataframe
+    percent:float:0-1
+    '''
+    nacount = dataframe.isna().sum()
+    to_del = nacount[nacount>len(dataframe)*percent].index
+    
+    #dataframe.drop(to_del,axis = 1,inplace = True)    
+    dataframe = dataframe[dataframe.columns[~dataframe.columns.isin(to_del)]]
+    return dataframe
+    
+ for indexs in demo_df.index: 
+    for i in range(len(demo_df.loc[indexs].values)): 
+        if(demo_df.loc[indexs].values[i] =='※'): 
+            print(indexs,i) 
+            print(demo_df.loc[indexs].values[i]) 
+            
+            
+### 随机森林插补
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestRegressor
+for i in sortindex:
+    print(i)
+    
+    #构建我们的新特征矩阵和新标签
+    df = data_1
+    fillc = df.iloc[:,i]
+    df = df.iloc[:,pd.Series(df.columns).index != i]
+    #df = pd.concat([df.iloc[:,df.columns != i],pd.DataFrame(y_full)],axis=1)
+    
+    #在新特征矩阵中，对含有缺失值的列，进行0的填补
+    df_0 =SimpleImputer(missing_values=np.nan,
+            strategy='constant',fill_value=0).fit_transform(df)
+          
+def cap(x,quantile=[0.01,0.99]):
+    """
+    盖帽法处理异常值
+    Args：
+    x：pd.Series列，连续变量
+    quantile：指定盖帽法的上下分位数范围
+    """
+    # 生成分位数
+    Q01,Q99=x.quantile(quantile).values.tolist()
+    # 替换异常值为指定的分位数
+    if Q01 > x.min():
+        x = x.copy()
+        x.loc[x<Q01] = Q01
+    
+    if Q99 < x.max():
+        x = x.copy()
+        x.loc[x>Q99] = Q99
+
+    return(x)          
+    
+ 
+def calulate_vif(X):
+    '''
+    计算多重共线性
+    X:pd.dataframe,  全数字类型数据
+    '''
+    from statsmodels.stats.outliers_influence import variance_inflation_factor
+    X[X.shape[1]]=1
+    #vif
+    vif=[]
+    for i in range(X.shape[1]-1):
+        vif.append(variance_inflation_factor(X.values,i))
+    #result_out
+    yy=pd.DataFrame(X.columns[:-1,])
+    yy.rename(columns={0:"var_name"},inplace=True) 
+    yy["vif"]=vif
+    # print(yy)
+    return yy 
+    
+    #找出我们的训练集和测试集
+    Ytrain = fillc[fillc.notnull()]
+    Ytest = fillc[fillc.isnull()]         
+    Xtrain = df_0[Ytrain.index,:]
+    Xtest = df_0[Ytest.index,:]
+        
+    #用随机森林回归来填补缺失值
+    rfc = RandomForestRegressor(n_estimators=100)
+    rfc = rfc.fit(Xtrain, Ytrain)   
+    Ypredict = rfc.predict(Xtest)
+    #将填补好的特征返回到我们的原始的特征矩阵中
+    data_1.loc[data_1.iloc[:,i].isnull(),data_1.iloc[:,i].name] = Ypredict
