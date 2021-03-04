@@ -1,0 +1,19 @@
+from lifelines import KaplanMeierFitter
+from lifelines.utils import median_survival_times
+from lifelines.statistics import multivariate_logrank_test
+
+def kmcurve(dataframe,time,event,group):
+    '''
+    data:pd dataframe
+    time:str,时间列名
+    events:str,事件列名
+    group：str,分组列名
+    '''
+    ##  生存曲线
+    ax = plt.subplot(111)
+    kmf = KaplanMeierFitter()
+    for name, grouped_df in dataframe.groupby(group):
+        kmf.fit(grouped_df[time], grouped_df[event], label=name)
+        kmf.plot_survival_function(ax=ax)
+    result = multivariate_logrank_test(dataframe[time], dataframe[group], data[event])
+    result.print_summary()
